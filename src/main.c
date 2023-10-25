@@ -70,7 +70,8 @@ void rcv_message2(struct zcan_frame *msg, void *arg) {
 
 void main(void) {
     can_dev = device_get_binding("CAN_1");
-    can_set_mode(can_dev, CAN_LOOPBACK_MODE);
+    // can_set_mode(can_dev, CAN_LOOPBACK_MODE);
+    can_set_mode(can_dev, CAN_NORMAL_MODE);
     can_attach_isr(can_dev, &rcv_message1, NULL, &filter123);
     can_attach_isr(can_dev, &rcv_message2, NULL, &filter456);
 
