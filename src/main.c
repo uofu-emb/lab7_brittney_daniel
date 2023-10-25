@@ -1,9 +1,14 @@
 #include <zephyr.h>
-#include "drivers/can.h"
-#include "drivers/gpio.h"
+#include <kernel.h>
+#include <sys/printk.h>
+#include <device.h>
+#include <drivers/can.h>
+#include <drivers/gpio.h>
+#include <sys/byteorder.h>
 
 
-struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios, {0});
+struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios, {0});
+struct gpio_dt_spec led1 = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led1), gpios, {0});
 
 
 struct zcan_frame frame1 = {
@@ -22,10 +27,18 @@ struct zcan_frame frame2 = {
     .data = {1,2,3,4,5,6,7,8}
 };
 
-const struct zcan_filter filter = {
+const struct zcan_filter filter123 = {
     .id_type = CAN_STANDARD_IDENTIFIER,
     .rtr = CAN_DATAFRAME,
     .id = 0x123,
+    .rtr_mask = 0,
+    .id_mask = 0xFFF
+};
+
+const struct zcan_filter filter456 = {
+    .id_type = CAN_STANDARD_IDENTIFIER,
+    .rtr = CAN_DATAFRAME,
+    .id = 0x456,
     .rtr_mask = 0,
     .id_mask = 0xFFF
 };
@@ -45,15 +58,25 @@ void send_message() {
     
 }
 
-void rcv_message(struct zcan_frame *msg, void *arg) {
+void rcv_message1(struct zcan_frame *msg, void *arg) {
     printk("received a thing\n");
-    gpio_pin_toggle(led.port, led.pin);
+    gpio_pin_toggle(led0.port, led0.pin);
+}
+
+void rcv_message2(struct zcan_frame *msg, void *arg) {
+    printk("received a thing\n");
+    gpio_pin_toggle(led1.port, led1.pin);
 }
 
 void main(void) {
     can_dev = device_get_binding("CAN_1");
     can_set_mode(can_dev, CAN_LOOPBACK_MODE);
-    can_attach_isr(can_dev, &rcv_message, NULL, &filter);
+    can_attach_isr(can_dev, &rcv_message1, NULL, &filter123);
+    can_attach_isr(can_dev, &rcv_message2, NULL, &filter456);
+
+    gpio_pin_configure_dt(&led0, GPIO_OUTPUT_HIGH);
+    gpio_pin_configure_dt(&led1, GPIO_OUTPUT_HIGH);
+
     while (true) {
         send_message();
         k_sleep(K_MSEC(500));
