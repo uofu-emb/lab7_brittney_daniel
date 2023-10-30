@@ -47,7 +47,7 @@ const struct device *can_dev;
 int ret;
 int next_message = 1;
 
-void send_message() {
+void send_message_alternate() {
     if (next_message == 1){
         ret = can_send(can_dev, &frame1, K_MSEC(100), NULL, NULL);
         next_message = 2;
@@ -68,6 +68,28 @@ void rcv_message2(struct zcan_frame *msg, void *arg) {
     gpio_pin_toggle(led1.port, led1.pin);
 }
 
+void send_message_high_prio() {
+    ret = can_send(can_dev, &frame1, K_MSEC(100), NULL, NULL);
+}
+
+void send_loop_high_prio() {
+    while (true) {
+        send_message_high_prio();
+    }
+}
+
+void send_message_low_prio() {
+    ret = can_send(can_dev, &frame2, K_MSEC(100), NULL, NULL);
+}
+
+void send_loop_low_prio() {
+    while (true) {
+        send_message_low_prio();
+        k_sleep(K_MSEC(500));
+    }
+}
+
+
 void main(void) {
     can_dev = device_get_binding("CAN_1");
     // can_set_mode(can_dev, CAN_LOOPBACK_MODE);
@@ -78,8 +100,9 @@ void main(void) {
     gpio_pin_configure_dt(&led0, GPIO_OUTPUT_HIGH);
     gpio_pin_configure_dt(&led1, GPIO_OUTPUT_HIGH);
 
-    while (true) {
-        send_message();
-        k_sleep(K_MSEC(500));
-    }
+    send_loop_low_prio();
+    // while (true) {
+        // send_message_alternate();
+        // k_sleep(K_MSEC(500));
+    // }
 }
