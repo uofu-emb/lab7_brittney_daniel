@@ -75,6 +75,7 @@ void send_message_high_prio() {
 void send_loop_high_prio() {
     while (true) {
         send_message_high_prio();
+        k_sleep(K_MSEC(400));
     }
 }
 
@@ -89,7 +90,6 @@ void send_loop_low_prio() {
     }
 }
 
-
 void main(void) {
     can_dev = device_get_binding("CAN_1");
     // can_set_mode(can_dev, CAN_LOOPBACK_MODE);
@@ -100,7 +100,12 @@ void main(void) {
     gpio_pin_configure_dt(&led0, GPIO_OUTPUT_HIGH);
     gpio_pin_configure_dt(&led1, GPIO_OUTPUT_HIGH);
 
-    send_loop_low_prio();
+    //Activity 3 (first board high priority)
+    send_loop_high_prio();
+    //Activity 3 (second board low priority)
+    //send_loop_low_prio();
+
+    //Activity 2
     // while (true) {
         // send_message_alternate();
         // k_sleep(K_MSEC(500));
